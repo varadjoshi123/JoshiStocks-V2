@@ -1,8 +1,7 @@
 //
 //  FavouritesSection.swift
 //  StockTrade
-//
-//  Created by Gaurav Baisware on 4/15/24.
+
 //
 
 import SwiftUI
@@ -12,7 +11,6 @@ struct FavouritesSection: View {
 
     var body: some View {
         Section(header: Text("FAVOURITES")) {
-            List{
                 ForEach($viewModel.favourites, id: \.self.id) { element in
                     NavigationLink(destination: StockDetails(stock_ticker: element.stock_ticker.wrappedValue, viewModel: self.viewModel)) {
                         VStack{
@@ -82,7 +80,6 @@ struct FavouritesSection: View {
             }
             .environment(\.editMode, viewModel.isEditable ? .constant(.active) : .constant(.inactive))
             .padding(.horizontal, 5.0)
-        }
         .onReceive(viewModel.timer) { _ in
             viewModel.updateFavourites()
         }

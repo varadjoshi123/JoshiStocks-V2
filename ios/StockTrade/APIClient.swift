@@ -21,16 +21,7 @@ enum APIConfig {
 }
 
 enum DemoUser {
-    private static let key = "JoshiStocks.DemoUserID"
-
-    static var id: String {
-        if let existing = UserDefaults.standard.string(forKey: key) {
-            return existing
-        }
-        let generated = "ios_" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-        UserDefaults.standard.set(generated, forKey: key)
-        return generated
-    }
+    static let id = "varad-demo-001"
 }
 
 enum APIClient {
