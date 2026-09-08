@@ -293,7 +293,8 @@ func getCurrencyFormat(value: Double) -> String {
     let modifiedValue = Decimal(checkedValue)
     let formatter = NumberFormatter()
     formatter.numberStyle = .currency
-    formatter.currencyCode = Locale.current.currency?.identifier ?? "USD"
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.currencyCode = "USD"
     return formatter.string(from: modifiedValue as NSNumber) ?? ""
 }
 

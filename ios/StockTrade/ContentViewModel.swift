@@ -96,6 +96,7 @@ class ContentViewModel: ObservableObject {
                 switch result {
                 case .success(let dashboard):
                     self.apply(dashboard)
+                    self.errorMessage = nil
                 case .failure(let error):
                     self.errorMessage = "Portfolio refresh failed: \(error.localizedDescription)"
                 }
