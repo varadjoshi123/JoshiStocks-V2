@@ -1,0 +1,21 @@
+{
+  "name": "joshistocks-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Backend API for JoshiStocks, a live-market paper trading application.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mongodb": "^6.20.0"
+  }
+}
