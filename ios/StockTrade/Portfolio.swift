@@ -84,14 +84,14 @@ struct TransactionHistoryElement: Identifiable, Decodable {
 func fetchDashboard(completion: @escaping (Result<PortfolioDashboard, Error>) -> Void) {
     APIClient.request("/api/v2/account/dashboard")
         .responseDecodable(of: PortfolioDashboard.self) { response in
-            completion(response.result)
+            completion(response.result.mapError { $0 as Error })
         }
 }
 
 func fetchStockPortfolioAndWallet(stock_ticker: String, completion: @escaping (Result<StockPortfolioElement, Error>) -> Void) {
     APIClient.request("/api/v2/account/position/\(stock_ticker)")
         .responseDecodable(of: StockPortfolioElement.self) { response in
-            completion(response.result)
+            completion(response.result.mapError { $0 as Error })
         }
 }
 
@@ -117,14 +117,14 @@ func executeTrade(
     )
     .validate(statusCode: 200..<300)
     .responseDecodable(of: TradeResponse.self) { response in
-        completion(response.result)
+        completion(response.result.mapError { $0 as Error })
     }
 }
 
 func fetchRecentTransactions(limit: Int = 10, completion: @escaping (Result<[TransactionHistoryElement], Error>) -> Void) {
     APIClient.request("/api/v2/account/transactions?limit=\(limit)")
         .responseDecodable(of: [TransactionHistoryElement].self) { response in
-            completion(response.result)
+            completion(response.result.mapError { $0 as Error })
         }
 }
 

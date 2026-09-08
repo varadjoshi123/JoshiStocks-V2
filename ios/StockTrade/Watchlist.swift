@@ -44,7 +44,7 @@ func fetchFavourites(completion: @escaping (Result<[WatchListElement], Error>) -
 func fetchStockFavourite(stock_ticker: String, completion: @escaping (Result<WatchListElement?, Error>) -> Void) {
     APIClient.request("/api/v2/watchlist/\(stock_ticker)")
         .responseDecodable(of: WatchListElement?.self) { response in
-            completion(response.result)
+            completion(response.result.mapError { $0 as Error })
         }
 }
 
@@ -62,7 +62,7 @@ func addToFavourite(stock_ticker: String, stock_company: String, completion: @es
     )
     .validate(statusCode: 200..<300)
     .responseDecodable(of: WatchlistInsertResponse.self) { response in
-        completion(response.result)
+        completion(response.result.mapError { $0 as Error })
     }
 }
 
@@ -70,6 +70,6 @@ func deleteFavourites(stock_ticker: String, completion: @escaping (Result<Delete
     APIClient.request("/api/v2/watchlist/\(stock_ticker)", method: .delete)
         .validate(statusCode: 200..<300)
         .responseDecodable(of: DeleteElement.self) { response in
-            completion(response.result)
+            completion(response.result.mapError { $0 as Error })
         }
 }

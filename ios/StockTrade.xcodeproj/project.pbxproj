@@ -13,7 +13,6 @@
 		BF28455E2BCB4D76006C655F /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF28455D2BCB4D76006C655F /* Portfolio.swift */; };
 		BF2845602BCB66D1006C655F /* Watchlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF28455F2BCB66D1006C655F /* Watchlist.swift */; };
 		BF2845632BCB6F99006C655F /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = BF2845622BCB6F99006C655F /* Alamofire */; };
-		BF2845652BCB6FB8006C655F /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = BF2845642BCB6FB8006C655F /* AlamofireDynamic */; };
 		BF28456A2BCB70BF006C655F /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = BF2845692BCB70BF006C655F /* SwiftyJSON */; };
 		BF28456C2BCBB7CF006C655F /* StockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF28456B2BCBB7CF006C655F /* StockData.swift */; };
 		BF33DE7F2BCDC1D500DBD628 /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF33DE7E2BCDC1D500DBD628 /* ContentViewModel.swift */; };
@@ -100,7 +99,6 @@
 				BF3E8ED92BD6564200472471 /* Kingfisher in Frameworks */,
 				BF28456A2BCB70BF006C655F /* SwiftyJSON in Frameworks */,
 				BF2845632BCB6F99006C655F /* Alamofire in Frameworks */,
-				BF2845652BCB6FB8006C655F /* AlamofireDynamic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,7 +214,6 @@
 			name = StockTrade;
 			packageProductDependencies = (
 				BF2845622BCB6F99006C655F /* Alamofire */,
-				BF2845642BCB6FB8006C655F /* AlamofireDynamic */,
 				BF2845692BCB70BF006C655F /* SwiftyJSON */,
 				BF3E8ED82BD6564200472471 /* Kingfisher */,
 			);
@@ -728,11 +725,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF2845612BCB6BBE006C655F /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
-		};
-		BF2845642BCB6FB8006C655F /* AlamofireDynamic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BF2845612BCB6BBE006C655F /* XCRemoteSwiftPackageReference "Alamofire" */;
-			productName = AlamofireDynamic;
 		};
 		BF2845692BCB70BF006C655F /* SwiftyJSON */ = {
 			isa = XCSwiftPackageProductDependency;
