@@ -5,168 +5,127 @@
 //  Created by Gaurav Baisware on 4/29/24.
 //
 
-import Foundation
 import SwiftUI
-import WebKit
+import Charts
 
-struct HistoricalChartView: UIViewRepresentable {
-    let htmlString: String
+enum HistoricalChartRange: String, CaseIterable, Identifiable {
+    case oneMonth = "1M"
+    case threeMonths = "3M"
+    case sixMonths = "6M"
+    case oneYear = "1Y"
+    case twoYears = "2Y"
 
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        return webView
-    }
+    var id: String { rawValue }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(htmlString, baseURL: nil)
+    var days: Int {
+        switch self {
+        case .oneMonth: return 31
+        case .threeMonths: return 93
+        case .sixMonths: return 186
+        case .oneYear: return 366
+        case .twoYears: return 732
+        }
     }
 }
-
 
 struct HistoricalChartComponent: View {
     var stockTicker: String
     var historicalChartData: [PointDetails]
+    var isLoading: Bool
+    @State private var selectedRange: HistoricalChartRange = .sixMonths
+
+    private var filteredData: [PointDetails] {
+        let sorted = historicalChartData.sorted { $0.t < $1.t }
+        guard let latest = sorted.last?.t else { return [] }
+        let cutoff = latest - Int64(selectedRange.days) * 24 * 60 * 60 * 1000
+        return sorted.filter { $0.t >= cutoff }
+    }
+
+    private var yDomain: ClosedRange<Double>? {
+        let values = filteredData.map(\.c)
+        guard let minValue = values.min(), let maxValue = values.max() else { return nil }
+        if abs(maxValue - minValue) < 0.01 {
+            return (minValue - 1)...(maxValue + 1)
+        }
+        let padding = max((maxValue - minValue) * 0.08, 0.5)
+        return (minValue - padding)...(maxValue + padding)
+    }
+
+    private var periodChange: Double {
+        guard let first = filteredData.first?.c, let last = filteredData.last?.c else { return 0 }
+        return last - first
+    }
+
+    private var lineColor: Color {
+        if abs(periodChange) < 0.005 { return .secondary }
+        return periodChange > 0 ? .green : .red
+    }
 
     var body: some View {
-        let ohlc_chart = historicalChartData.compactMap { obj in
-            return [ obj.t, obj.o, obj.h, obj.l, obj.c ]
-        }
-        let volume_chart = historicalChartData.compactMap { obj in
-            return [obj.t, obj.v]
-        }
-        let htmlString = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <script src="https://code.highcharts.com/stock/highstock.js"></script>
-                <script src="https://code.highcharts.com/stock/modules/drag-panes.js"></script>
-                <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
-                <script src="https://code.highcharts.com/stock/indicators/indicators.js"></script>
-                <script src="https://code.highcharts.com/stock/indicators/volume-by-price.js"></script>
-                <script src="https://code.highcharts.com/modules/accessibility.js"></script>
-            </head>
-            <body>
-                <div id="chart-container" style="max-height: 380px; margin: 0 auto"></div>
-                <script type="text/javascript">
-                    Highcharts.chart('chart-container', {
-                chart: {
-                    style: {
-                       fontSize: '16px'
-                      }
-                },
-                title: {
-                    text: "\(stockTicker) Historical"
-                },
-                subtitle: {
-                    text: 'With SMA and Volume by Price technical indicators'
-                },
-                legend: {
-                    enabled: false
-                },
-                rangeSelector: {
-                    enabled: true,
-                    selected: 2,
-                    inputEnabled: true
-                },
-                tooltip: {
-                      split: true
-                    , shared: false
-                },
-                navigator: {
-                    enabled: true
-                },
-                credits: {
-                    enabled: true,
-                    href: 'https://polygon.io/',
-                    text: 'Source: Polygon.io'
-                },
-                xAxis: {
-                    maxRange: 2 * 365 * 24 * 3600 * 1000,
-                    type: 'datetime',
-                    dateTimeLabelFormats: {
-                        hour: '%M:%Y'
-                    }
-                },
-                yAxis: [
-                    {
-                        startOnTick: false,
-                        endOnTick: false,
-                        labels: {
-                            align: 'right',
-                            x: -3
-                        },
-                        title: {
-                            text: 'OHLC'
-                        },
-                        height: '60%',
-                        lineWidth: 2,
-                        opposite: true,
-                        resize: {
-                            enabled: true
-                        }
-                    },
-                    {
-                        labels: {
-                            align: 'right',
-                            x: -3
-                        },
-                        title: {
-                            text: 'Volume'
-                        },
-                        top: '65%',
-                        height: '35%',
-                        offset: 0,
-                        opposite: true,
-                        lineWidth: 2
-                    }
-                ],
-                series: [
-                    {
-                        type: 'candlestick',
-                        name: '\(stockTicker)',
-                        id: '\(stockTicker)',
-                        zIndex: 2,
-                        data: \(ohlc_chart)
-                    },
-                    {
-                        type: 'column',
-                        name: 'Volume',
-                        id: 'volume',
-                        data: \(volume_chart),
-                        yAxis: 1
-                    },
-                    {
-                        type: 'vbp',
-                        linkedTo: '\(stockTicker)',
-                        params: {
-                            volumeSeriesID: 'volume'
-                        },
-                        dataLabels: {
-                            enabled: false
-                        },
-                        zoneLines: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        type: 'sma',
-                        linkedTo: '\(stockTicker)',
-                        zIndex: 1,
-                        marker: {
-                            enabled: false
-                        }
-                    }
-                ]
-            });
-                </script>
-            </body>
-            </html>
-        """
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("\(stockTicker) History")
+                    .font(.headline)
+                Spacer()
+                if !filteredData.isEmpty {
+                    Text(getCurrencyFormat(value: periodChange))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(lineColor)
+                }
+            }
 
-        return VStack {
-            HistoricalChartView(htmlString: htmlString)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Picker("Range", selection: $selectedRange) {
+                ForEach(HistoricalChartRange.allCases) { range in
+                    Text(range.rawValue).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            if filteredData.isEmpty {
+                VStack(spacing: 8) {
+                    if isLoading {
+                        ProgressView()
+                        Text("Loading historical chart…")
+                    } else {
+                        Image(systemName: "clock.arrow.circlepath")
+                        Text("Historical chart unavailable")
+                    }
+                }
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 260)
+            } else {
+                Chart(filteredData, id: \.t) { point in
+                    LineMark(
+                        x: .value("Date", Date(timeIntervalSince1970: TimeInterval(point.t) / 1000)),
+                        y: .value("Close", point.c)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .foregroundStyle(lineColor)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                .chartYScale(domain: yDomain ?? 0...1)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .trailing, values: .automatic(desiredCount: 5)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let price = value.as(Double.self) {
+                                Text(price, format: .currency(code: "USD").precision(.fractionLength(0...2)))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 280)
+            }
         }
+        .padding(.horizontal)
+        .padding(.top, 10)
     }
 }

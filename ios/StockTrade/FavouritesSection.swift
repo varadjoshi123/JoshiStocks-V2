@@ -11,6 +11,12 @@ struct FavouritesSection: View {
 
     var body: some View {
         Section(header: Text("FAVOURITES")) {
+                if viewModel.favourites.isEmpty {
+                    Text("No favourites yet. Open a stock and tap the star to add it here.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 5)
+                }
                 ForEach($viewModel.favourites, id: \.self.id) { element in
                     NavigationLink(destination: StockDetails(stock_ticker: element.stock_ticker.wrappedValue, viewModel: self.viewModel)) {
                         VStack{
@@ -47,23 +53,21 @@ struct FavouritesSection: View {
                             switch response {
                             case .success(let success):
                                 if (success.deletedCount != 1) {
-                                    allElementsDeleted.toggle()
+                                    allElementsDeleted = false
                                 }
                             case .failure(let error):
+                                allElementsDeleted = false
                                 print("Error while deleting watchlist data: \(error.localizedDescription)")
                             }
                             dispatchGroup.leave()
                         }
                     }
                     dispatchGroup.notify(queue: .main) {
-                        if (allElementsDeleted){
-                            print("1")
+                        if allElementsDeleted {
                             viewModel.favourites.remove(atOffsets: indexSet)
                         } else {
-                            print("2")
                             viewModel.favourites = favouritesData
                         }
-                        print(viewModel.favourites)
                     }
                 })
                 .onMove(perform: { indices, newOffset in

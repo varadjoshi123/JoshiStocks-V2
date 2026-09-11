@@ -6,8 +6,10 @@ const { createApp } = require("./app");
 
 async function main() {
   const config = getConfig();
-  const client = new MongoClient(config.mongoUri);
+  const client = new MongoClient(config.mongoUri, { serverSelectionTimeoutMS: 10000 });
+  console.log("Connecting to MongoDB...");
   await client.connect();
+  console.log("MongoDB connected");
   const db = client.db(config.mongoDb);
   await Promise.all([
     db.collection("wallets").createIndex({ user_id: 1 }, { unique: true }),

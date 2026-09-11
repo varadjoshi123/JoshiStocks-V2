@@ -5,125 +5,81 @@
 //  Created by Gaurav Baisware on 4/29/24.
 //
 
-import Foundation
 import SwiftUI
-import WebKit
-
-struct RecommendationTrendsChartView: UIViewRepresentable {
-    let htmlString: String
-
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        return webView
-    }
-
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(htmlString, baseURL: nil)
-    }
-}
-
+import Charts
 
 struct RecommendationTrendsChartComponent: View {
     var recommendationTrendsSeriesData: [StockRecommendationElement]
+    var isLoading: Bool
+
+    private var recentData: [StockRecommendationElement] {
+        Array(recommendationTrendsSeriesData.prefix(6).reversed())
+    }
+
+    private func periodLabel(_ period: String) -> String {
+        if period.count >= 7 {
+            return String(period.prefix(7))
+        }
+        return period
+    }
 
     var body: some View {
-        let recommendation_trends_series_data = """
-        [
-            { name: 'Strong Buy'
-            , data: \(recommendationTrendsSeriesData.compactMap({ obj in obj.strongBuy }))
-            , color: '#177b3f'
-            },
-            { name: 'Buy'
-            , data: \(recommendationTrendsSeriesData.compactMap({ obj in obj.buy }))
-            , color: '#21c15e'
-            },
-            { name: 'Hold'
-            , data: \(recommendationTrendsSeriesData.compactMap({ obj in obj.hold }))
-            , color: '#c2951f'
-            },
-            { name: 'Sell'
-            , data: \(recommendationTrendsSeriesData.compactMap({ obj in obj.sell }))
-            , color: '#f76667'
-            },
-            { name: 'Strong Sell'
-            , data: \(recommendationTrendsSeriesData.compactMap({ obj in obj.strongSell }))
-            , color: '#8c3938'
-            },
-        ]
-        """
-        let recommendation_trends_categories = recommendationTrendsSeriesData.compactMap({obj in obj.period.dropLast(3)});
-        let chartOptions = """
-            {
-                chart: {
-                    type: 'column'
-                    , style: {
-                       fontSize: '16px'
-                      }
-                },
-                title: {
-                  text: 'Recommendation Trends'
-                , align: 'center'
-                , style: {
-                    fontFamily: '"Barlow", sans-serif'
-                  , fontWeight: '600'
-                  , fontSize: '18px'
-                  }
-                },
-                plotOptions: {
-                  column: {
-                    stacking: 'normal'
-                  , dataLabels: {
-                      enabled: true
-                    }
-                  }
-                },
-                xAxis: {
-                    categories: \(recommendation_trends_categories)
-                    , style: {
-                        fontSize: '16px'
-                      }
-                },
-                yAxis: {
-                  min: 0
-                , title: {
-                    text: '#Analysis'
-                  }
-                , stackLabels: {
-                    enabled: false
-                  }
-                , style: {
-                    fontSize: '16px'
-                  }
-                , tickPixelInterval: 90
-                },
-                legend: {
-                  enabled: true
-                },
-                series: \(recommendation_trends_series_data)
-              }
-        """
-        let htmlString = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <script src="https://code.highcharts.com/highcharts.js"></script>
-                <script src="https://code.highcharts.com/modules/series-label.js"></script>
-                <script src="https://code.highcharts.com/modules/exporting.js"></script>
-                <script src="https://code.highcharts.com/modules/export-data.js"></script>
-            </head>
-            <body>
-                <div id="chart-container" style="margin: 0 auto"></div>
-                <script type="text/javascript">
-                    Highcharts.chart('chart-container', \(chartOptions));
-                </script>
-            </body>
-            </html>
-        """
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recommendation Trends")
+                .font(.headline)
 
-        return VStack {
-            HourlyChartView(htmlString: htmlString)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if recentData.isEmpty {
+                VStack(spacing: 8) {
+                    if isLoading {
+                        ProgressView()
+                        Text("Loading analyst recommendations…")
+                    } else {
+                        Image(systemName: "person.3")
+                        Text("Analyst recommendations unavailable")
+                    }
+                }
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 260)
+            } else {
+                Chart(recentData, id: \.period) { item in
+                    BarMark(
+                        x: .value("Period", periodLabel(item.period)),
+                        y: .value("Analysts", item.strongBuy)
+                    )
+                    .foregroundStyle(by: .value("Rating", "Strong Buy"))
+
+                    BarMark(
+                        x: .value("Period", periodLabel(item.period)),
+                        y: .value("Analysts", item.buy)
+                    )
+                    .foregroundStyle(by: .value("Rating", "Buy"))
+
+                    BarMark(
+                        x: .value("Period", periodLabel(item.period)),
+                        y: .value("Analysts", item.hold)
+                    )
+                    .foregroundStyle(by: .value("Rating", "Hold"))
+
+                    BarMark(
+                        x: .value("Period", periodLabel(item.period)),
+                        y: .value("Analysts", item.sell)
+                    )
+                    .foregroundStyle(by: .value("Rating", "Sell"))
+
+                    BarMark(
+                        x: .value("Period", periodLabel(item.period)),
+                        y: .value("Analysts", item.strongSell)
+                    )
+                    .foregroundStyle(by: .value("Rating", "Strong Sell"))
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading)
+                }
+                .chartLegend(position: .bottom, alignment: .center, spacing: 8)
+                .frame(height: 300)
+            }
         }
+        .padding(.horizontal)
     }
 }

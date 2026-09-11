@@ -115,9 +115,31 @@ func executeTrade(
         parameters: parameters,
         encoding: JSONEncoding.default
     )
-    .validate(statusCode: 200..<300)
-    .responseDecodable(of: TradeResponse.self) { response in
-        completion(response.result.mapError { $0 as Error })
+    .responseData { response in
+        if let statusCode = response.response?.statusCode, !(200..<300).contains(statusCode) {
+            let payload = response.data.flatMap { try? JSONDecoder().decode(APIErrorPayload.self, from: $0) }
+            completion(.failure(JoshiStocksAPIError(
+                message: payload?.message ?? "Trade could not be completed.",
+                code: payload?.error
+            )))
+            return
+        }
+
+        if let error = response.error {
+            completion(.failure(error))
+            return
+        }
+
+        guard let data = response.data else {
+            completion(.failure(JoshiStocksAPIError(message: "The server returned an empty trade response.", code: nil)))
+            return
+        }
+
+        do {
+            completion(.success(try JSONDecoder().decode(TradeResponse.self, from: data)))
+        } catch {
+            completion(.failure(error))
+        }
     }
 }
 

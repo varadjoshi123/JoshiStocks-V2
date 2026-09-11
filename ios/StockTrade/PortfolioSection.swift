@@ -22,6 +22,12 @@ struct PortfolioSection: View {
             }
 
             HStack {
+                metric("Holdings", getCurrencyFormat(value: viewModel.holdingsMarketValue))
+                Spacer()
+                metric("Cost Basis", getCurrencyFormat(value: viewModel.costBasis))
+            }
+
+            HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Unrealized P/L")
                         .font(.caption)
@@ -66,7 +72,10 @@ struct PortfolioSection: View {
                                     .fontWeight(.semibold)
                             }
                             HStack {
-                                Text("\(element.quantity.wrappedValue) shares")
+                                let allocation = viewModel.holdingsMarketValue > 0
+                                    ? (element.market_value.wrappedValue ?? 0.0) / viewModel.holdingsMarketValue
+                                    : 0.0
+                                Text("\(element.quantity.wrappedValue) shares • \(getPercentageFormat(value: allocation)) allocation")
                                     .foregroundColor(.secondary)
                                 Spacer()
                                 let pnl = element.change_in_price.wrappedValue ?? 0.0

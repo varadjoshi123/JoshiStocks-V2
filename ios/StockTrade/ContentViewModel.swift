@@ -51,7 +51,6 @@ class ContentViewModel: ObservableObject {
                 switch result {
                 case .success(let watchlist):
                     self.favourites = watchlist
-                    self.updateFavourites()
                 case .failure(let error):
                     errors.append("Watchlist: \(error.localizedDescription)")
                 }
@@ -110,37 +109,11 @@ class ContentViewModel: ObservableObject {
     }
 
     func updateFavourites() {
-        guard !favourites.isEmpty else { return }
-        let group = DispatchGroup()
-        let source = favourites
-        var updated: [WatchListElement] = []
-        let lock = NSLock()
-
-        for element in source {
-            group.enter()
-            fetchLatestPrice(stock_ticker: element.stock_ticker) { result in
-                defer { group.leave() }
-                switch result {
-                case .success(let price):
-                    let row = WatchListElement(
-                        id: element.id,
-                        stock_ticker: element.stock_ticker,
-                        stock_company: element.stock_company,
-                        current_price: price.c,
-                        change_in_price: price.d,
-                        change_in_price_percentage: price.dp / 100
-                    )
-                    lock.lock(); updated.append(row); lock.unlock()
-                case .failure:
-                    lock.lock(); updated.append(element); lock.unlock()
+        fetchFavourites { result in
+            DispatchQueue.main.async {
+                if case .success(let watchlist) = result {
+                    self.favourites = watchlist
                 }
-            }
-        }
-
-        group.notify(queue: .main) {
-            let originalOrder = Dictionary(uniqueKeysWithValues: source.enumerated().map { ($0.element.stock_ticker, $0.offset) })
-            self.favourites = updated.sorted {
-                (originalOrder[$0.stock_ticker] ?? 0) < (originalOrder[$1.stock_ticker] ?? 0)
             }
         }
     }

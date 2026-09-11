@@ -8,20 +8,57 @@
 import Foundation
 import Alamofire
 
+struct APIErrorPayload: Decodable {
+    let error: String?
+    let message: String?
+}
+
+struct JoshiStocksAPIError: LocalizedError {
+    let message: String
+    let code: String?
+
+    var errorDescription: String? { message }
+}
+
 enum APIConfig {
-    // For the iOS Simulator, localhost points to the Mac running the backend.
-    // Before creating a forwardable device build, replace this with the deployed HTTPS API URL.
     static var baseURL: String {
         if let override = UserDefaults.standard.string(forKey: "JoshiStocks.APIBaseURL"),
            !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return override.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         }
+
+        if let configured = Bundle.main.object(forInfoDictionaryKey: "JOSHISTOCKS_API_BASE_URL") as? String,
+           !configured.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return configured.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+
+        // Simulator development fallback. Release/device builds should set
+        // JOSHISTOCKS_API_BASE_URL to the deployed HTTPS backend URL.
         return "http://127.0.0.1:8080"
     }
 }
 
 enum DemoUser {
-    static let id = "varad-demo-001"
+    private static let key = "JoshiStocks.DemoUserID"
+
+    static var id: String {
+        if let override = UserDefaults.standard.string(forKey: "JoshiStocks.DemoUserIDOverride"),
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return override
+        }
+
+        #if DEBUG
+        // Keeps the existing local demo portfolio available during development.
+        return "varad-demo-001"
+        #else
+        if let existing = UserDefaults.standard.string(forKey: key) {
+            return existing
+        }
+        let generated = "ios_" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        UserDefaults.standard.set(generated, forKey: key)
+        return generated
+        #endif
+    }
 }
 
 enum APIClient {

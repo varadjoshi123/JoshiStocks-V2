@@ -5,7 +5,6 @@
 //  Created by Gaurav Baisware on 4/28/24.
 //
 
-import Foundation
 import SwiftUI
 
 struct TradeSheetView: View {
@@ -13,140 +12,170 @@ struct TradeSheetView: View {
     var stockPortfolioData: PortFolioElement
     var cashBalance: Double
     var current_price: Double
-    
+
     var stockModel: StockDetailsModel
     var stockDetailsView: StockDetails
     var viewModel: ContentViewModel
-    @State private var displayTradeSuccessfulSheet: Bool = false
-    @State private var quantity: Int64 = 0
-    @State private var quantityString: String = ""
-    @State private var isShowingToast: Bool = false
+
+    @State private var displayTradeSuccessfulSheet = false
+    @State private var quantityText = ""
+    @State private var isShowingToast = false
     @State private var toastMessage: Text = Text("")
-    @State private var allStocksSold: Bool = false
+    @State private var allStocksSold = false
+    @State private var isSubmitting = false
     @Environment(\.dismiss) var dismiss
-    
+
+    private var quantity: Int64 {
+        Int64(quantityText) ?? 0
+    }
+
+    private var estimatedValue: Double {
+        current_price * Double(quantity)
+    }
+
+    private var ownedShares: Int64 {
+        stockPortfolioData.quantity
+    }
+
+    private func showError(_ message: String) {
+        toastMessage = Text(message)
+        isShowingToast = true
+    }
+
+    private func submit(_ side: String) {
+        guard quantity > 0 else {
+            showError("Enter a positive whole number of shares.")
+            return
+        }
+
+        if side == "BUY" && estimatedValue > cashBalance + 0.001 {
+            showError("Not enough cash for this purchase.")
+            return
+        }
+
+        if side == "SELL" && quantity > ownedShares {
+            showError("You only own \(ownedShares) \(ownedShares == 1 ? "share" : "shares") of \(stock_info.ticker).")
+            return
+        }
+
+        isSubmitting = true
+        executeTrade(
+            stock_ticker: stockPortfolioData.stock_ticker,
+            stock_company: stockPortfolioData.stock_company,
+            side: side,
+            quantity: quantity
+        ) { result in
+            DispatchQueue.main.async {
+                isSubmitting = false
+                switch result {
+                case .success(let response):
+                    stockModel.successfulToastMessage = response.message
+                    allStocksSold = side == "SELL" && ownedShares == quantity
+                    displayTradeSuccessfulSheet = true
+                case .failure(let error):
+                    showError(error.localizedDescription)
+                }
+            }
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .center, content: {
-            HStack{
+        VStack(spacing: 18) {
+            HStack {
                 Spacer()
                 Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.black)
-                        .padding()
-                        .cornerRadius(8)
-                        .font(.system(size: 18))
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary)
                 }
-                
             }
-            Text("Trade \(stock_info.name) shares")
-                .bold()
-                .font(.system(size: 18))
+
+            Text("Trade \(stock_info.name)")
+                .font(.title3.weight(.semibold))
+
             Spacer()
-            HStack(alignment: .bottom, content: {
-                TextField("0", text: Binding(
-                    get: {
-                        if let value = Int64(self.quantityString) {
-                            return String(value)
-                        } else {
-                            return ""
-                        }
-                    },
-                    set: {
-                        if let value = Int64($0) {
-                            self.quantity = value
-                        } else {
-                            if !($0 == "") {
-                                self.isShowingToast = true
-                                self.toastMessage = Text("Please enter a valid amount")
-                            }
-                            self.quantity = 0
-                        }
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                TextField("0", text: $quantityText)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .font(.system(size: 72, weight: .thin))
+                    .onChange(of: quantityText) { _, newValue in
+                        quantityText = newValue.filter { $0.isNumber }
                     }
-                ))
-                    .keyboardType(.decimalPad)
-                    .font(.system(size: 110,  weight: .thin))
-                    .foregroundColor(self.$quantity.wrappedValue == 0 ? .secondary : .black)
-                Text(self.$quantity.wrappedValue < 2 ? "Share" : "Shares")
-                    .font(.system(size: 38))
-                    .padding(.bottom, 10)
-            })
-            HStack{
-                Spacer()
-                Text("x $\(String(format: "%.2f", current_price))/share = $\(String(format: "%.2f", current_price * Double(quantity)))")
-                    .font(.system(size: 17))
+
+                Text(quantity == 1 ? "Share" : "Shares")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
             }
+
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Market price")
+                    Spacer()
+                    Text(getCurrencyFormat(value: current_price))
+                }
+                HStack {
+                    Text("Estimated value")
+                    Spacer()
+                    Text(getCurrencyFormat(value: estimatedValue))
+                        .fontWeight(.semibold)
+                }
+                HStack {
+                    Text("Available cash")
+                    Spacer()
+                    Text(getCurrencyFormat(value: cashBalance))
+                }
+                HStack {
+                    Text("Shares owned")
+                    Spacer()
+                    Text("\(ownedShares)")
+                }
+            }
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+
             Spacer()
-            Text("$\(String(format: "%.2f", cashBalance)) available to buy \(stock_info.ticker)")
-                .foregroundColor(.secondary)
-                .font(.system(size: 14))
-            HStack(alignment: .center, content: {
-                Button(action: {
-                    buyStocks(portfolio_element: stockPortfolioData, quantity_bought: quantity, cash_balance: cashBalance) { response in
-                        switch response{
-                        case .success(let resp):
-                            if resp.contains("successfully") {
-                                self.stockModel.successfulToastMessage = resp
-                                self.displayTradeSuccessfulSheet = self.stockModel.successfulToastMessage.contains("successfully")
-                            } else {
-                                isShowingToast = true
-                                toastMessage = Text(resp)
-                            }
-                        case .failure(let error):
-                            isShowingToast = true
-                            toastMessage = Text("Failed to buy stocks: \(error.localizedDescription)")
-                        }
-                    }
-                }) {
+
+            if isSubmitting {
+                ProgressView("Submitting trade…")
+                    .padding(.bottom, 4)
+            }
+
+            HStack(spacing: 12) {
+                Button(action: { submit("BUY") }) {
                     Text("Buy")
                         .font(.headline)
-                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                        .padding()
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.green)
+                        .clipShape(Capsule())
                 }
-                .frame(maxWidth: .infinity)
-                .background(Color.green)
-                .cornerRadius(40)
-                
-                Button(action: {
-                    sellStocks(portfolio_element: stockPortfolioData, quantity_sold: quantity, cash_balance: cashBalance) { response in
-                        switch response{
-                        case .success(let resp):
-                            if resp.contains("successfully") {
-                                self.stockModel.successfulToastMessage = resp
-                                if (self.stockPortfolioData.quantity == quantity) {
-                                    self.allStocksSold = true
-                                }
-                                self.displayTradeSuccessfulSheet = self.stockModel.successfulToastMessage.contains("successfully")
-                            } else {
-                                isShowingToast = true
-                                toastMessage = Text(resp)
-                            }
-                        case .failure(let error):
-                            isShowingToast = true
-                            toastMessage = Text("Failed to sell stocks: \(error.localizedDescription)")
-                        }
-                    }
-                }) {
+                .disabled(isSubmitting)
+
+                Button(action: { submit("SELL") }) {
                     Text("Sell")
                         .font(.headline)
-                        .fontWeight(.semibold)
                         .foregroundColor(.white)
-                        .padding()
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.green)
+                        .clipShape(Capsule())
                 }
-                .frame(maxWidth: .infinity)
-                .background(Color.green)
-                .cornerRadius(40)
-                
-            })
-            .font(.system(size: 16))
-        })
-        .sheet(isPresented: $displayTradeSuccessfulSheet, content: {
-            SuccessfulTradeView(stockModel: self.stockModel, tradeSheet: self, stockDetailsView: self.stockDetailsView, allStocksSold: self.allStocksSold, viewModel: self.viewModel)
-        })
+                .disabled(isSubmitting)
+            }
+        }
+        .sheet(isPresented: $displayTradeSuccessfulSheet) {
+            SuccessfulTradeView(
+                stockModel: stockModel,
+                tradeSheet: self,
+                stockDetailsView: stockDetailsView,
+                allStocksSold: allStocksSold,
+                viewModel: viewModel
+            )
+        }
         .toast(isShowing: $isShowingToast, text: toastMessage)
-        .font(.title)
         .padding()
     }
 }

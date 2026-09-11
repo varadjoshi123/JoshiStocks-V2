@@ -16,7 +16,7 @@ function createApp({ db, marketData, accountService, corsOrigin = "*" }) {
 
   app.use("/api/v2/market", marketRoutes(marketData));
   app.use("/api/v2/account", accountRoutes(accountService));
-  app.use("/api/v2/watchlist", watchlistRoutes(db));
+  app.use("/api/v2/watchlist", watchlistRoutes(db, marketData));
 
   // Compatibility aliases for the original CSCI 571 Swift screens.
   app.get("/getStockSymbols/:query", async (req, res, next) => {

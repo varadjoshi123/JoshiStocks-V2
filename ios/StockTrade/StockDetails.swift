@@ -32,6 +32,13 @@ struct StockDetails: View {
         } else {
             ScrollView {
                 VStack(alignment: .leading, content: {
+                    if let errorMessage = stockModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                            .padding(.bottom, 4)
+                    }
                     HStack{
                         Text(stockModel.stock_info.name)
                             .font(.system(size: 18))
@@ -65,9 +72,9 @@ struct StockDetails: View {
                     .padding(.horizontal)
                     .padding(.vertical, 3)
                     HStack{
-                        ChartsView(stockModel: stockModel, stock_ticker: stockModel.stock_ticker, hourly_chart_data: stockModel.hourly_chart_data, historical_chart_data: stockModel.historical_chart_data, change_in_price: stockModel.change_in_price)
+                        ChartsView(stockModel: stockModel)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 440)
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 4)
                     Text("Portfolio")
                         .font(.system(size: 24))
@@ -114,17 +121,18 @@ struct StockDetails: View {
                         })
                         .font(.system(size: 14))
                         Spacer()
-                        Button("Trade") {
-                        }
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                        .padding()
-                        .padding(.horizontal, 36)
-                        .background(Color.green)
-                        .cornerRadius(40)
-                        .onTapGesture {
+                        Button(action: {
                             displayTradeSheet = true
+                        }) {
+                            Text("Trade")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 38)
+                                .background(Color.green)
+                                .clipShape(Capsule())
                         }
+                        .disabled(stockModel.current_price <= 0)
                         .sheet(isPresented: $displayTradeSheet, content: {
                             TradeSheetView(stock_info: stockModel.stock_info, stockPortfolioData: stockModel.stockPortfolioData ?? getDefaultPortfolioElement(ticker: stockModel.stock_info.ticker, name: stockModel.stock_info.name), cashBalance: stockModel.cashBalance, current_price: stockModel.current_price, stockModel: stockModel, stockDetailsView: self, viewModel: self.viewModel)
                         })
@@ -328,18 +336,32 @@ struct StockDetails: View {
                     .padding(.horizontal)
                     .padding(.bottom, 36)
                     HStack{
-                        RecommendationTrendsChartComponent(recommendationTrendsSeriesData: stockModel.recommendation_trends_chart_data)
+                        RecommendationTrendsChartComponent(recommendationTrendsSeriesData: stockModel.recommendation_trends_chart_data, isLoading: !stockModel.recommendationTrendsChartDataUpdated)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 410)
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 24)
                     HStack{
-                        EPSChartsComponent(epsChartsData: stockModel.eps_chart_data)
+                        EPSChartsComponent(epsChartsData: stockModel.eps_chart_data, isLoading: !stockModel.epsChartDataUpdated)
                     }
                     .padding(.bottom, 18)
-                    .frame(maxWidth: .infinity, minHeight: 410)
+                    .frame(maxWidth: .infinity)
                     Text("News")
                         .font(.system(size: 24))
                         .padding(.horizontal)
+                    if !stockModel.topNewsUpdated {
+                        HStack {
+                            Spacer()
+                            ProgressView("Loading news…")
+                            Spacer()
+                        }
+                        .padding()
+                    } else if stockModel.top_news.isEmpty {
+                        Text("No recent company news is available.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                    }
                     ForEach(stockModel.top_news.indices, id: \.self) { index in
                         let news_element = stockModel.top_news[index]
                         VStack{
@@ -411,17 +433,13 @@ struct StockDetails: View {
                 })
             }
             .toast(isShowing: $stockModel.shouldShowFavouriteToast, text: Text(stockModel.favouriteToastMessage))
-            .onAppear(){
-                stockModel.stock_ticker = self.stock_ticker
-                stockModel.fetchStockData()
-            }
             .navigationTitle(self.stockModel.isLoading ? "" : self.stock_ticker)
             .navigationBarItems(trailing: Button(action: {
-                stockModel.addOrRemoveFromFavourites()
-                print(stockModel)
-                viewModel.fetchData()
+                stockModel.addOrRemoveFromFavourites {
+                    viewModel.fetchData()
+                }
             }) {
-                Image(systemName: stockModel.isInFavourite ? "plus.circle.fill" : "plus.circle")
+                Image(systemName: stockModel.isInFavourite ? "star.fill" : "star")
                     .foregroundColor(.blue)
             }
                 .buttonStyle(PlainButtonStyle()))

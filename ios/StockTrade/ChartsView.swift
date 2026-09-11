@@ -5,29 +5,32 @@
 //  Created by Gaurav Baisware on 4/29/24.
 //
 
-import Foundation
 import SwiftUI
 
 struct ChartsView: View {
-    var stockModel: StockDetailsModel
-    var stock_ticker: String
-    var hourly_chart_data: [PointDetails]
-    var historical_chart_data: [PointDetails]
-    var change_in_price: Double
-    
-    var body: some View{
-        TabView{
-            HourlyChartComponent(stockTicker: stock_ticker, hourlyChartData: hourly_chart_data, changeInPrice: change_in_price)
-                .tabItem {
-                    Label("Hourly", systemImage: "chart.xyaxis.line")
-                }
-            HistoricalChartComponent(stockTicker: stock_ticker, historicalChartData: historical_chart_data)
-                .tabItem {
-                    Label("Historical", systemImage: "clock")
-                }
+    @ObservedObject var stockModel: StockDetailsModel
+
+    var body: some View {
+        TabView {
+            HourlyChartComponent(
+                stockTicker: stockModel.stock_ticker,
+                hourlyChartData: stockModel.hourly_chart_data,
+                changeInPrice: stockModel.change_in_price,
+                isLoading: !stockModel.hourlyChartDataUpdated
+            )
+            .tabItem {
+                Label("Hourly", systemImage: "chart.xyaxis.line")
+            }
+
+            HistoricalChartComponent(
+                stockTicker: stockModel.stock_ticker,
+                historicalChartData: stockModel.historical_chart_data,
+                isLoading: !stockModel.historicalChartDataUpdated
+            )
+            .tabItem {
+                Label("Historical", systemImage: "clock")
+            }
         }
-        .onAppear(perform: {
-            stockModel.updateChartsData()
-        })
+        .frame(height: 390)
     }
 }

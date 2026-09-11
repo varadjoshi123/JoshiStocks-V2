@@ -5,124 +5,102 @@
 //  Created by Gaurav Baisware on 4/29/24.
 //
 
-import Foundation
 import SwiftUI
-import WebKit
-
-struct HourlyChartView: UIViewRepresentable {
-    let htmlString: String
-
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        return webView
-    }
-
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(htmlString, baseURL: nil)
-    }
-}
-
+import Charts
 
 struct HourlyChartComponent: View {
     var stockTicker: String
     var hourlyChartData: [PointDetails]
     var changeInPrice: Double
+    var isLoading: Bool
+
+    private var recentData: [PointDetails] {
+        guard let latest = hourlyChartData.max(by: { $0.t < $1.t })?.t else { return [] }
+        let sixHours: Int64 = 6 * 60 * 60 * 1000
+        return hourlyChartData
+            .filter { latest - $0.t <= sixHours }
+            .sorted { $0.t < $1.t }
+    }
+
+    private var lineColor: Color {
+        if abs(changeInPrice) < 0.005 { return .secondary }
+        return changeInPrice > 0 ? .green : .red
+    }
+
+    private var yDomain: ClosedRange<Double>? {
+        let values = recentData.map(\.c)
+        guard let minValue = values.min(), let maxValue = values.max() else { return nil }
+        if abs(maxValue - minValue) < 0.01 {
+            return (minValue - 1)...(maxValue + 1)
+        }
+        let padding = max((maxValue - minValue) * 0.12, 0.5)
+        return (minValue - padding)...(maxValue + padding)
+    }
 
     var body: some View {
-        let isChangeZero = String(format: "%.2f", abs(self.changeInPrice)) == "0.00"
-        let isChangePositive = self.changeInPrice > 0
-        let maxTimestamp = hourlyChartData.last?.t ?? 1000000000000000000;
-        let filteredData: [PointDetails] = {
-            let filtered = hourlyChartData.filter { obj in
-                let timestamp = obj.t
-                return maxTimestamp - timestamp <= 3600 * 6 * 1000
-            }
-            return filtered
-        }()
-        let data = filteredData.compactMap { obj in
-            return [obj.t, obj.c]
-        }
-        let chartOptions = """
-            {
-                chart: {
-                  animation: true
-                , style: {
-                   fontSize: '16px'
-                  }
-                },
-                accessibility: {
-                  enabled: false
-                },
-                title: {
-                  text: `\(stockTicker) Hourly Price Variation`
-                , style: {
-                    fontFamily: '"Barlow", sans-serif'
-                  , fontWeight: '600'
-                  , fontSize: '18px'
-                  }
-                },
-                plotOptions: {
-                  series: {
-                    color: \(isChangeZero)? 'black' : (\(isChangePositive)? '#058b03' : '#fd0214')
-                  }
-                },
-                tooltip: {
-                  animation: true
-                , split: true
-                },
-                xAxis: [
-                  { type: 'datetime'
-                  , crosshair: true
-                  , endOnTick: true
-                  , tickPixelInterval: 80
-                  }
-                ],
-                yAxis: {
-                  opposite: true
-                , showLastLabel: false
-                , title: {
-                    text: ''
-                  }
-                , labels: {
-                    align: 'right'
-                  , x: 0
-                  , y: -2
-                  }
-                , tickPixelInterval: 80
-                },
-                series: [{
-                  data: \(data)
-                      , showInLegend: false
-                , type: 'line'
-                , name:`\(stockTicker)`
-                , marker: {
-                    enabled: false
-                  }
-                }]
-              }
-        """
-        let htmlString = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <script src="https://code.highcharts.com/highcharts.js"></script>
-                <script src="https://code.highcharts.com/modules/series-label.js"></script>
-                <script src="https://code.highcharts.com/modules/exporting.js"></script>
-                <script src="https://code.highcharts.com/modules/export-data.js"></script>
-            </head>
-            <body>
-                <div id="chart-container" style="max-height: 380px; margin: 0 auto"></div>
-                <script type="text/javascript">
-                    Highcharts.chart('chart-container', \(chartOptions));
-                </script>
-            </body>
-            </html>
-        """
+        VStack(alignment: .leading, spacing: 12) {
+            Text("\(stockTicker) Intraday")
+                .font(.headline)
 
-        return VStack {
-            HourlyChartView(htmlString: htmlString)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if recentData.isEmpty {
+                VStack(spacing: 8) {
+                    if isLoading {
+                        ProgressView()
+                        Text("Loading intraday chart…")
+                    } else {
+                        Image(systemName: "chart.xyaxis.line")
+                        Text("Intraday chart unavailable")
+                    }
+                }
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 280)
+            } else {
+                Chart(recentData, id: \.t) { point in
+                    LineMark(
+                        x: .value("Time", Date(timeIntervalSince1970: TimeInterval(point.t) / 1000)),
+                        y: .value("Price", point.c)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .foregroundStyle(lineColor)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                    AreaMark(
+                        x: .value("Time", Date(timeIntervalSince1970: TimeInterval(point.t) / 1000)),
+                        yStart: .value("Baseline", yDomain?.lowerBound ?? point.c),
+                        yEnd: .value("Price", point.c)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [lineColor.opacity(0.22), lineColor.opacity(0.02)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+                .chartYScale(domain: yDomain ?? 0...1)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel(format: .dateTime.hour().minute())
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .trailing, values: .automatic(desiredCount: 5)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let price = value.as(Double.self) {
+                                Text(price, format: .currency(code: "USD").precision(.fractionLength(0...2)))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 300)
+            }
         }
+        .padding(.horizontal)
+        .padding(.top, 10)
     }
 }
