@@ -123,7 +123,7 @@ struct PriceData: Decodable {
 }
 
 struct PointDetails: Decodable {
-    var v: Int64
+    var v: Double
     var vw: Double
     var o: Double
     var c: Double

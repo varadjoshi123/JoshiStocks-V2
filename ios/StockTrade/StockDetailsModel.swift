@@ -94,8 +94,6 @@ class StockDetailsModel: ObservableObject {
                 self.stockPortfolioData = portfolio.portfolio_data ?? getDefaultPortfolioElement(ticker: stock_info.ticker, name:  stock_info.name)
                 self.avg_cost_per_share = (self.stockPortfolioData?.total_cost ?? 0.0) / Double(self.stockPortfolioData?.quantity ?? 1)
                 self.updateLatestPrice()
-                self.stockInfoUpdated = true
-                self.refreshLoadingState()
             case .failure(let error):
                 print("Error fetching stock details data for \(self.stock_ticker): \(error.localizedDescription)")
                 self.stockInfoUpdated = true
@@ -117,9 +115,11 @@ class StockDetailsModel: ObservableObject {
                 self.prev_close_price = price_info.pc
                 self.market_value = Double(self.stockPortfolioData?.quantity ?? 0) * self.current_price
                 self.change_from_total_cost = self.market_value - (self.stockPortfolioData?.total_cost ?? 0.0)
+                self.stockInfoUpdated = true
                 self.refreshLoadingState()
             case .failure(let error):
                 print("Error fetching price data for stock \(self.stock_ticker): \(error.localizedDescription)")
+                self.stockInfoUpdated = true
                 self.refreshLoadingState()
             }
         }
@@ -187,6 +187,7 @@ class StockDetailsModel: ObservableObject {
         fetchHourlyPriceData(stock_ticker: self.stock_ticker) { hourly_chart_data in
             switch hourly_chart_data {
             case .success(let data):
+                print("HOURLY CHART POINTS:", data.results.count)
                 self.hourly_chart_data = data.results
                 self.hourly_chart_data_count = data.count
                 self.hourlyChartDataUpdated = true
@@ -201,6 +202,7 @@ class StockDetailsModel: ObservableObject {
         fetchHistoricalPriceData(stock_ticker: self.stock_ticker) { historical_chart_data in
             switch historical_chart_data {
             case .success(let data):
+                print("HISTORICAL CHART POINTS:", data.results.count)
                 self.historical_chart_data = data.results
                 self.historicalChartDataUpdated = true
                 self.refreshLoadingState()
@@ -242,14 +244,7 @@ class StockDetailsModel: ObservableObject {
         self.isLoading = !(
             self.stockPortfolioUpdated &&
             self.stockFavouriteUpdated &&
-            self.stockInfoUpdated &&
-            self.peersListUpdated &&
-            self.insiderSentimentUpdated &&
-            self.topNewsUpdated &&
-            self.hourlyChartDataUpdated &&
-            self.historicalChartDataUpdated &&
-            self.recommendationTrendsChartDataUpdated &&
-            self.epsChartDataUpdated
+            self.stockInfoUpdated
         )
     }
 
