@@ -101,6 +101,6 @@ struct HourlyChartComponent: View {
             }
         }
         .padding(.horizontal)
-        .padding(.top, 10)
+        .padding(.top, 24)
     }
 }

@@ -122,10 +122,10 @@ struct HistoricalChartComponent: View {
                         }
                     }
                 }
-                .frame(height: 280)
+                .frame(height: 250)
             }
         }
         .padding(.horizontal)
-        .padding(.top, 10)
+        .padding(.top, 24)
     }
 }

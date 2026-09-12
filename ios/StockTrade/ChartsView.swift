@@ -31,6 +31,6 @@ struct ChartsView: View {
                 Label("Historical", systemImage: "clock")
             }
         }
-        .frame(height: 390)
+        .frame(height: 440)
     }
 }
