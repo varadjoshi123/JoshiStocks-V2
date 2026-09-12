@@ -26,6 +26,14 @@ struct ContentView: View {
 
     private let recentSearchesKey = "JoshiStocks.RecentSearches"
     private let maximumRecentSearches = 8
+    private let quickPicks: [RecentSearchItem] = [
+        RecentSearchItem(symbol: "AAPL", company: "Apple Inc."),
+        RecentSearchItem(symbol: "MSFT", company: "Microsoft Corporation"),
+        RecentSearchItem(symbol: "NVDA", company: "NVIDIA Corporation"),
+        RecentSearchItem(symbol: "TSLA", company: "Tesla Inc."),
+        RecentSearchItem(symbol: "AMZN", company: "Amazon.com Inc."),
+        RecentSearchItem(symbol: "GOOGL", company: "Alphabet Inc.")
+    ]
 
     // MARK: - Search
 
@@ -148,11 +156,55 @@ struct ContentView: View {
     private var recentSearchContent: some View {
         Group {
             if recentSearches.isEmpty {
-                ContentUnavailableView(
-                    "No Recent Searches",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text("Stocks you open will appear here.")
-                )
+                VStack(spacing: 0) {
+
+                    VStack(spacing: 8) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 34))
+                            .foregroundColor(.secondary)
+
+                        Text("No Recent Searches")
+                            .font(.headline)
+
+                        Text("Stocks you open will appear here.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+                    .padding(.bottom, 18)
+
+                    List {
+                        Section("Quick Picks") {
+                            ForEach(quickPicks) { item in
+                                NavigationLink(
+                                    destination:
+                                        StockDetails(
+                                            stock_ticker: item.symbol,
+                                            viewModel: viewModel
+                                        )
+                                        .onAppear {
+                                            rememberSearch(
+                                                symbol: item.symbol,
+                                                company: item.company
+                                            )
+                                        }
+                                ) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(item.symbol)
+                                            .font(.system(size: 20, weight: .semibold))
+
+                                        Text(item.company)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.vertical, 2)
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                }
             } else {
                 VStack(spacing: 0) {
                     HStack {
