@@ -184,54 +184,68 @@ struct StockDetails: View {
                     Text("About")
                         .font(.system(size: 24))
                         .padding(.horizontal)
-                    HStack(spacing: 0, content: {
-                        VStack(content: {
+                    VStack(spacing: 5) {
+
+                        HStack(alignment: .top, spacing: 12) {
                             Text("IPO Start Date:")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
                                 .fontWeight(.semibold)
-                            Text("Industry:")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
-                                .fontWeight(.semibold)
-                            Text("Webpage:")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
-                                .fontWeight(.semibold)
-                            Text("Company Peers:")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
-                                .fontWeight(.semibold)
-                        })
-                        .frame(minWidth: 0, maxWidth: .infinity)
-                        VStack(content: {
+                                .frame(width: 145, alignment: .leading)
+
                             Text(stockModel.stock_info.ipo ?? "1980-01-01")
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
                                 .lineLimit(1)
+                        }
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("Industry:")
+                                .fontWeight(.semibold)
+                                .frame(width: 145, alignment: .leading)
+
                             Text(stockModel.stock_info.finnhubIndustry ?? "Technology")
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
                                 .lineLimit(1)
-                            Link(stockModel.stock_info.weburl, destination: URL(string: stockModel.stock_info.weburl)!)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 0.2)
-                                .lineLimit(1)
-                            ScrollView(.horizontal) {
-                                HStack {
-                                    ForEach(stockModel.peers_list, id: \.self) { index in
-                                        NavigationLink(destination: StockDetails( stock_ticker: index, viewModel: self.viewModel)){
-                                            Text("\(index),")
-                                        }
+                        }
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("Webpage:")
+                                .fontWeight(.semibold)
+                                .frame(width: 145, alignment: .leading)
+
+                            Link(
+                                stockModel.stock_info.weburl,
+                                destination: URL(string: stockModel.stock_info.weburl)!
+                            )
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(1)
+                        }
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("Company Peers:")
+                                .fontWeight(.semibold)
+                                .frame(width: 145, alignment: .leading)
+
+                            LazyVGrid(
+                                columns: [
+                                    GridItem(.adaptive(minimum: 45), spacing: 8)
+                                ],
+                                alignment: .leading,
+                                spacing: 5
+                            ) {
+                                ForEach(stockModel.peers_list, id: \.self) { peer in
+                                    NavigationLink(
+                                        destination: StockDetails(
+                                            stock_ticker: peer,
+                                            viewModel: viewModel
+                                        )
+                                    ) {
+                                        Text(peer)
+                                            .lineLimit(1)
                                     }
                                 }
                             }
-                            .transition(.move(edge: .bottom))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 0.2)
-                        })
-                        .frame(maxWidth: .infinity)
-                    })
+                        }
+                    }
                     .padding(.horizontal)
                     .padding(.bottom, 12)
                     .font(.system(size: 14))

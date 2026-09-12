@@ -299,11 +299,10 @@ func getCurrencyFormat(value: Double) -> String {
 }
 
 func getPercentageFormat(value: Double) -> String {
-    let checkedValue = String(format: "%.2f", abs(value)) == "0.00" ? 0.00 : value
+    let checkedValue = abs(value) < 0.00005 ? 0.0 : value
     let formatter = NumberFormatter()
     formatter.numberStyle = .percent
     formatter.maximumFractionDigits = 2
-    formatter.minimumFractionDigits = 2
     return formatter.string(from: NSNumber(value: checkedValue)) ?? ""
 }
 
