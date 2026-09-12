@@ -1,115 +1,190 @@
 # JoshiStocks V2
 
-JoshiStocks V2 is an independent continuation of a collaborative USC CSCI 571 stock-market / paper-trading course project. The original assignment code is retained as a recovery baseline and attribution is preserved in source headers; the V2 Git history separates the new engineering work.
+JoshiStocks V2 is a full-stack iOS paper-trading application built with SwiftUI, Node.js, Express, and MongoDB Atlas.
 
-## What the app does
+It is an independent continuation and modernization of a collaborative USC CSCI 571 course project. The V2 work expands the original project with a redesigned backend, server-authoritative trading, portfolio accounting, native charts, improved search and watchlist workflows, automated tests, and cloud deployment.
 
-JoshiStocks is an iOS paper-trading application backed by Node.js, Express, MongoDB Atlas, Finnhub, and Polygon/Massive market data.
+## Features
 
-Current V2 functionality includes:
-
-- stock search with debounced autocomplete
-- company profile, quote, peers, news, sentiment, recommendations, and earnings
-- native Swift Charts for intraday and historical price visualization
-- selectable historical ranges (1M / 3M / 6M / 1Y / 2Y)
-- per-install demo accounts for release builds and a stable development demo account
-- server-authoritative BUY / SELL paper trades
-- MongoDB transaction-based wallet and position updates
-- average-cost accounting
-- realized and unrealized P/L
-- portfolio net worth, cash, market value, and allocation percentages
-- recent transaction history
-- per-user favourites / watchlist
-- trade validation for insufficient cash and shares
-- backend market-data caching with stale fallback
-- environment-based secrets
-- pooled MongoDB connection
-- health check and trading-logic tests
-- Docker / Render deployment configuration
+- Live stock search with debounced autocomplete
+- Recent Searches stored locally on-device
+- Quick Picks for commonly viewed stocks
+- Live stock quotes and company profiles
+- Native Swift Charts for intraday price movement
+- Historical charts with 1M, 3M, 6M, 1Y, and 2Y ranges
+- Company statistics, industry information, and clickable peer stocks
+- Insider sentiment
+- Analyst recommendation trends
+- Historical EPS surprises
+- Financial news
+- Persistent favourites / watchlist
+- BUY and SELL paper trading
+- Insufficient-cash and overselling validation
+- Average-cost position accounting
+- Realized and unrealized profit/loss
+- Portfolio net worth, cash, holdings, and cost basis
+- Position allocation percentages
+- Recent transaction activity
+- Independent anonymous demo accounts for Release installations
+- $25,000 starting paper balance for new demo accounts
+- Backend market-data caching with stale-data fallback
+- MongoDB transaction-based portfolio updates
+- Automated backend accounting tests
+- Production backend deployed over HTTPS
 
 ## Architecture
 
 ```text
-iOS (SwiftUI)
-    |
-    | HTTPS / REST + X-User-ID
-    v
-Node.js / Express API
-    |                 |
-    |                 +--> Finnhub (quotes, profiles, news, fundamentals)
-    |                 +--> Polygon/Massive (intraday + historical aggregates)
-    v
+iOS App
+Swift / SwiftUI / Swift Charts
+        |
+        | HTTPS REST API
+        | X-User-ID
+        v
+Node.js + Express API
+        |
+        |---- Finnhub
+        |     quotes, profiles, news,
+        |     fundamentals and insights
+        |
+        |---- Polygon / Massive
+        |     intraday and historical data
+        |
+        v
 MongoDB Atlas
-(wallets, positions, transactions, watchlist)
+wallets | positions | transactions | watchlist
 ```
 
-## Local backend setup
+## Tech Stack
+
+### iOS
+
+- Swift
+- SwiftUI
+- Swift Charts
+- Alamofire
+- Kingfisher
+
+### Backend
+
+- Node.js
+- Express
+- MongoDB Node.js Driver
+- REST APIs
+
+### Data & Infrastructure
+
+- Finnhub
+- Polygon / Massive
+- MongoDB Atlas
+- Docker
+- Render
+- GitHub
+
+## Paper Trading
+
+Trades are processed by the backend rather than calculated only on the device.
+
+The backend validates available cash and owned shares, updates wallet and position state, records transactions, and maintains average-cost accounting.
+
+Portfolio metrics include cash balance, holdings market value, cost basis, net worth, unrealized P/L, realized P/L, total P/L, and position allocation.
+
+## Backend Tests
+
+Run:
+
+```bash
+cd backend
+npm test
+npm run check
+```
+
+The automated test suite verifies:
+
+- BUY cash calculations
+- rejection of purchases above available cash
+- average-cost handling during partial sales
+- cost-basis reset after selling a full position
+- rejection of overselling
+- portfolio market-value and return calculations
+
+## Local Development
+
+Create the backend environment file:
 
 ```bash
 cd backend
 cp .env.example .env
-# Fill in your own credentials in .env
 npm install
-npm test
+```
+
+Provide your own credentials in `.env`:
+
+```text
+MONGODB_URI=
+MONGODB_DB=joshistocks
+FINNHUB_API_KEY=
+POLYGON_API_KEY=
+DEMO_STARTING_CASH=25000
+```
+
+Start the backend:
+
+```bash
 node --env-file=.env src/server.js
 ```
 
-The API defaults to `http://127.0.0.1:8080`.
+The Debug iOS build connects to:
 
-## iOS setup
+```text
+http://127.0.0.1:8080
+```
 
-Open:
+Open the iOS project:
 
 ```text
 ios/StockTrade.xcodeproj
 ```
 
-The Debug build defaults to `http://127.0.0.1:8080`, which works with the iOS Simulator when the backend is running on the same Mac.
+## Production Deployment
 
-For a deployed build, set the app target's generated Info.plist key:
+The backend is deployed on Render using the repository's `render.yaml` and Docker configuration.
+
+Production API:
 
 ```text
-JOSHISTOCKS_API_BASE_URL = https://your-api-host.example.com
+https://joshistocks-api.onrender.com
 ```
 
-`APIClient.swift` also accepts a `UserDefaults` override named `JoshiStocks.APIBaseURL`, which is useful for development/testing.
+Health endpoint:
 
-## Backend deployment
+```text
+https://joshistocks-api.onrender.com/health
+```
 
-The repository includes:
+A successful health response looks like:
 
-- `backend/Dockerfile`
-- `backend/.dockerignore`
-- `render.yaml`
+```json
+{"status":"ok","service":"joshistocks-api","version":"2.0.0"}
+```
 
-For Render, create/deploy the Blueprint and supply these secrets in the Render environment:
+Release builds automatically use the deployed HTTPS backend.
 
-- `MONGODB_URI`
-- `FINNHUB_API_KEY`
-- `POLYGON_API_KEY`
+Because the current Render deployment uses the free service tier, the first request after a period of inactivity may take longer while the service wakes up.
 
-Do not commit or upload a real `.env` file.
+## Demo Accounts
 
-## Demo verification checklist
+Debug builds use a stable development account so local test data persists between runs.
 
-Before sending a build to someone else, verify on a Mac with Xcode:
+Release builds generate and persist a unique anonymous identifier for each installation. This prevents separate testers from sharing the same paper-trading portfolio.
 
-1. Backend health returns `status: ok`.
-2. Home screen loads cash, net worth, holdings, P/L, activity, and favourites.
-3. Search `AAPL` and open Apple.
-4. Intraday chart renders.
-5. Historical chart renders and all range selectors work.
-6. Add/remove AAPL from favourites.
-7. BUY 1 share and confirm portfolio/activity refresh.
-8. SELL 1 share and confirm realized P/L / cash refresh.
-9. Attempt an invalid trade and confirm a human-readable error appears.
-10. Clean build and run once more before archiving or TestFlight distribution.
+The current identity mechanism is intended for demonstration and paper trading, not production-grade authentication.
 
 ## Security
 
-Secrets live only in backend environment variables. The iOS client never contains Finnhub, Polygon/Massive, or MongoDB credentials.
+Finnhub, Polygon / Massive, and MongoDB credentials remain server-side.
 
-The shareable repository should exclude:
+Sensitive and generated files are excluded from the repository, including:
 
 ```text
 backend/.env
@@ -118,6 +193,16 @@ DerivedData
 .DS_Store
 ```
 
+MongoDB Atlas network access is restricted to approved development access and the outbound ranges used by the deployed backend.
+
+## Project Status
+
+The application has been verified locally and against the deployed production backend.
+
+Verified workflows include stock search, stock-detail pages, intraday and historical charts, favourites, Recent Searches, Quick Picks, BUY and SELL trades, invalid-trade protection, portfolio accounting, and production iOS-to-Render-to-MongoDB connectivity.
+
 ## Attribution
 
-The original course-project file attribution is intentionally preserved. V2 additions and commits document the independent continuation and modernization work.
+JoshiStocks V2 is an independent continuation of a collaborative USC CSCI 571 course project.
+
+The V2 Git history documents the subsequent modernization and engineering work across the iOS application, backend architecture, trading/accounting system, market-data integration, automated testing, and deployment.
