@@ -32,9 +32,11 @@ enum APIConfig {
             return configured.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         }
 
-        // Simulator development fallback. Release/device builds should set
-        // JOSHISTOCKS_API_BASE_URL to the deployed HTTPS backend URL.
-        return "http://127.0.0.1:8080"
+        #if DEBUG
+        return "http" + "://" + "127.0.0.1:8080"
+        #else
+        return "https" + "://" + "joshistocks-api.onrender.com"
+        #endif
     }
 }
 
