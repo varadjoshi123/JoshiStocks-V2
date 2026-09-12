@@ -2,7 +2,6 @@
 //  StockTradeTests.swift
 //  StockTradeTests
 //
-//  Created by Gaurav Baisware on 4/8/24.
 //
 
 import XCTest

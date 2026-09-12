@@ -2,7 +2,6 @@
 //  Package.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/13/24.
 //
 
 //import Alamofire

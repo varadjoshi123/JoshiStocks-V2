@@ -2,7 +2,6 @@
 //  TradeSheetView.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/28/24.
 //
 
 import SwiftUI

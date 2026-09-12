@@ -2,7 +2,6 @@
 //  EPSChartsView.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/30/24.
 //
 
 import SwiftUI

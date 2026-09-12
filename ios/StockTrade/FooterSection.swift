@@ -2,7 +2,6 @@
 //  FooterSection.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/15/24.
 //
 
 import SwiftUI

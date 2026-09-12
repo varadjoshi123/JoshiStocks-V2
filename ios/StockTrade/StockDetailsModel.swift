@@ -2,7 +2,6 @@
 //  StockDetailsModel.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/21/24.
 //
 
 import Foundation

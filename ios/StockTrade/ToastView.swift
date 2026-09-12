@@ -2,7 +2,6 @@
 //  ToastView.swift
 //  StockTrade
 //
-//  Created by Gaurav Baisware on 4/29/24.
 //
 
 import Foundation
