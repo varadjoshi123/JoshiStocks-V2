@@ -2,6 +2,7 @@ services:
   - type: web
     name: joshistocks-api
     runtime: docker
+    plan: free
     rootDir: backend
     healthCheckPath: /health
     autoDeploy: true
