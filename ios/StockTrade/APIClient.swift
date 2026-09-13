@@ -64,6 +64,20 @@ enum DemoUser {
 }
 
 enum APIClient {
+
+    private static let retryPolicy = RetryPolicy(
+        retryLimit: 1,
+        exponentialBackoffBase: 2,
+        exponentialBackoffScale: 1.0,
+        retryableHTTPMethods: [.get],
+        retryableHTTPStatusCodes: Set(500...599),
+        retryableURLErrorCodes: [
+            .timedOut,
+            .cannotConnectToHost,
+            .cannotFindHost,
+            .networkConnectionLost
+        ]
+    )
     static func url(_ path: String) -> String {
         let normalizedPath = path.hasPrefix("/") ? path : "/" + path
         return APIConfig.baseURL + normalizedPath
@@ -84,7 +98,11 @@ enum APIClient {
             method: method,
             parameters: parameters,
             encoding: encoding,
-            headers: headers
+            headers: headers,
+            interceptor: retryPolicy,
+            requestModifier: { request in
+                request.timeoutInterval = 60
+            }
         )
     }
 }
