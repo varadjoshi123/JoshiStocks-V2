@@ -32,6 +32,36 @@ It is an independent continuation and modernization of a collaborative USC CSCI 
 - Automated backend accounting tests
 - Production backend deployed over HTTPS
 
+## App Preview
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/home-portfolio.png" width="250"><br>
+      <b>Portfolio Dashboard</b>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/search-quick-picks.png" width="250"><br>
+      <b>Search & Quick Picks</b>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/stock-details-aapl.png" width="250"><br>
+      <b>Stock Details & Charts</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/stock-insights-aapl.png" width="250"><br>
+      <b>Company Insights</b>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/trade-aapl.png" width="250"><br>
+      <b>Paper Trading</b>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
 ## Architecture
 
 ```text
